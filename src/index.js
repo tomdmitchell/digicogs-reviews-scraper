@@ -37,7 +37,7 @@ const init = async () => {
       await page.waitForTimeout(3000).then(() => console.log('Delay 3000...'));
       //HANDLE COUNTER
       let counterValue = counter();
-      if (counterValue === 10) {
+      if (counterValue === 1000) {
         counter = counterWrapper();
         writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
         fileIndex++;
