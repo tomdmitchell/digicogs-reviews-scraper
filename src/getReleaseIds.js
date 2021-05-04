@@ -1,13 +1,10 @@
 import axios from 'axios';
 
-const getReleaseIds = async () => {
+const getReleaseIds = async (genre, style) => {
   const response = await axios.get(
-    `https://tm-destination-test-123.s3-eu-west-1.amazonaws.com/${encodeURIComponent(
-      process.env.STYLE
-    )}.json`
+    `https://digicogs-release-ids.s3-eu-west-1.amazonaws.com/${genre}/${style}.json`
   );
-  // return response.data.ids;
-  return response.data[process.env.STYLE];
+  return response.data.ids;
 };
 
 export default getReleaseIds;
