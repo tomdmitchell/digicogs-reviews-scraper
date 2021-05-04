@@ -12,6 +12,7 @@ import getReleaseIds from './getReleaseIds.js';
 import counterWrapper from './counterWrapper.js';
 
 const init = async () => {
+  console.log('BEGINNING VM SETUP INIT');
   //INIT COUNTER
   let counter = counterWrapper();
   let fileIndex = 1;
