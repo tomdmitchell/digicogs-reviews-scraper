@@ -12,20 +12,21 @@ import getReleaseIds from './getReleaseIds.js';
 import counterWrapper from './counterWrapper.js';
 
 const init = async () => {
-  console.log('BEGINNING VM SETUP INIT');
   //INIT COUNTER
   let counter = counterWrapper();
   let fileIndex = 1;
+  //INIT LOG
+  let logObject = { failure: [] };
   //LAUNCH BROWSER
   const browser = await puppeteer.launch();
-  try {
-    const page = await getPuppeteerPage(browser);
-    const releaseIds = await getReleaseIds(process.env.GENRE, process.env.STYLE);
-    let dataArr = [];
-    //BEGIN ITERATION
-    for (let i = 0; i < releaseIds.length; i++) {
-      const reviewsUrl = `https://www.discogs.com/release/${releaseIds[i]}/reviews`;
-      console.log(`URL ${i + 1} of ${releaseIds.length + 1}: ${reviewsUrl}`);
+  let page = await getPuppeteerPage(browser);
+  const releaseIds = await getReleaseIds(process.env.GENRE, process.env.STYLE);
+  let dataArr = [];
+  //BEGIN ITERATION
+  for (let i = 0; i < releaseIds.length; i++) {
+    const reviewsUrl = `https://www.discogs.com/release/${releaseIds[i]}/reviews`;
+    console.log(`URL ${i + 1} of ${releaseIds.length + 1}: ${reviewsUrl}`);
+    try {
       await page.goto(reviewsUrl, { waitUntil: 'networkidle2' });
       let numberOfReviews = await getNumberOfReviews(page);
       if (numberOfReviews > 0) {
@@ -35,20 +36,25 @@ const init = async () => {
       } else {
         console.log(`No reviews for release ${releaseIds[i]}`);
       }
-      await page.waitForTimeout(3000).then(() => console.log('Delay 3000...'));
-      //HANDLE COUNTER
-      let counterValue = counter();
-      if (counterValue === 1000) {
-        counter = counterWrapper();
-        writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
-        fileIndex++;
-        dataArr = [];
-      }
+    } catch (err) {
+      console.log('error in catch block: ', err);
+      logObject.failure.push({ [releaseIds[i]]: err.toString() });
+      page = await getPuppeteerPage(browser);
     }
-    writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
-  } catch (err) {
-    console.log('error in catch block: ', err);
+    //HANDLE COUNTER
+    let counterValue = counter();
+    if (counterValue === 1000) {
+      counter = counterWrapper();
+      writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
+      fileIndex++;
+      dataArr = [];
+    }
+    await page.waitForTimeout(3000).then(() => console.log('Delay 3000...'));
   }
+
+  //WRITE REMAINING REVIEW DATA & ERR LOG
+  writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
+  writeJson(logObject, 'log', 'log_output');
   process.exit(1);
 };
 
