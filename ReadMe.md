@@ -59,6 +59,14 @@ ctrl+A ctrl+D
 
 ```
 
+### Resume Session
+
+```
+
+screen -r
+
+```
+
 ## Tracker
 
 https://docs.google.com/spreadsheets/d/1XgM9Jb9HBZYkWGkvQ_1_nclfKGwwWlags5WXXJsyUGQ/edit?usp=sharing
