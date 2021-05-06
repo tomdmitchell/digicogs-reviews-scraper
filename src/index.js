@@ -28,6 +28,15 @@ const init = async () => {
     console.log(`URL ${i + 1} of ${releaseIds.length + 1}: ${reviewsUrl}`);
     try {
       await page.goto(reviewsUrl, { waitUntil: 'networkidle2' });
+      //CHECK FOR PAGINATION ELEMENT
+      try {
+        await page.waitForSelector('.pagination_total', { timeout: 4000 });
+      } catch (err) {
+        console.log('***Pagination element not found');
+        logObject.failure.push({ [releaseIds[i]]: err.toString() });
+        continue;
+      }
+      //GET NUMBER OF REVIEWS
       let numberOfReviews = await getNumberOfReviews(page);
       if (numberOfReviews > 0) {
         console.log(`Number of reviews for release: ${releaseIds[i]}: ${numberOfReviews}`);
@@ -37,7 +46,7 @@ const init = async () => {
         console.log(`No reviews for release ${releaseIds[i]}`);
       }
     } catch (err) {
-      console.log('error in catch block: ', err);
+      console.log('***Error in main catch block: ', err);
       logObject.failure.push({ [releaseIds[i]]: err.toString() });
       page = await getPuppeteerPage(browser);
     }
@@ -49,7 +58,7 @@ const init = async () => {
       fileIndex++;
       dataArr = [];
     }
-    await page.waitForTimeout(3000).then(() => console.log('Delay 3000...'));
+    await page.waitForTimeout(4000).then(() => console.log('Delay 4000...'));
   }
 
   //WRITE REMAINING REVIEW DATA & ERR LOG
