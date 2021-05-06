@@ -16,7 +16,7 @@ const init = async () => {
   let counter = counterWrapper();
   let fileIndex = 1;
   //INIT LOG
-  let logObject = { failure: [] };
+  let logObject = { failure: [], releasesWithReviews: 0 };
   //LAUNCH BROWSER
   const browser = await puppeteer.launch();
   let page = await getPuppeteerPage(browser);
@@ -25,7 +25,7 @@ const init = async () => {
   //BEGIN ITERATION
   for (let i = 0; i < releaseIds.length; i++) {
     const reviewsUrl = `https://www.discogs.com/release/${releaseIds[i]}/reviews`;
-    console.log(`URL ${i + 1} of ${releaseIds.length + 1}: ${reviewsUrl}`);
+    console.log(`${process.env.STYLE} - URL ${i + 1} of ${releaseIds.length + 1}: ${reviewsUrl}`);
     try {
       await page.goto(reviewsUrl, { waitUntil: 'networkidle2' });
       //CHECK FOR PAGINATION ELEMENT
@@ -40,6 +40,7 @@ const init = async () => {
       let numberOfReviews = await getNumberOfReviews(page);
       if (numberOfReviews > 0) {
         console.log(`Number of reviews for release: ${releaseIds[i]}: ${numberOfReviews}`);
+        logObject.releasesWithReviews++;
         const dataObj = createDataObj(numberOfReviews, releaseIds[i]);
         dataArr.push(dataObj);
       } else {
