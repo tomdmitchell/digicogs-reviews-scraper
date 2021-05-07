@@ -10,6 +10,7 @@ import getPuppeteerPage from './getPuppeteerPage.js';
 import getNumberOfReviews from './getNumberOfReviews.js';
 import getReleaseIds from './getReleaseIds.js';
 import counterWrapper from './counterWrapper.js';
+import mergeJsons from './mergeJsons.js';
 
 const init = async () => {
   //INIT COUNTER
@@ -23,7 +24,7 @@ const init = async () => {
   const releaseIds = await getReleaseIds(process.env.GENRE, process.env.STYLE);
   let dataArr = [];
   //BEGIN ITERATION
-  for (let i = 0; i < releaseIds.length; i++) {
+  for (let i = 0; i < 23; i++) {
     const reviewsUrl = `https://www.discogs.com/release/${releaseIds[i]}/reviews`;
     console.log(`${process.env.STYLE} - URL ${i + 1} of ${releaseIds.length + 1}: ${reviewsUrl}`);
     try {
@@ -53,9 +54,9 @@ const init = async () => {
     }
     //HANDLE COUNTER
     let counterValue = counter();
-    if (counterValue === 1000) {
+    if (counterValue === 5) {
       counter = counterWrapper();
-      writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
+      await writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
       fileIndex++;
       dataArr = [];
     }
@@ -63,8 +64,9 @@ const init = async () => {
   }
 
   //WRITE REMAINING REVIEW DATA & ERR LOG
-  writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
-  writeJson(logObject, 'log', 'log_output');
+  await writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
+  await mergeJsons(`json_output`, `reviewsData`, `${process.env.STYLE}_master`);
+  await writeJson(logObject, 'log', 'log_output');
   process.exit(1);
 };
 
