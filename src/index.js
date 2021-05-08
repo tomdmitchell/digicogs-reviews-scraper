@@ -22,8 +22,10 @@ const init = async () => {
   let page = await getPuppeteerPage(browser);
   const releaseIds = await getReleaseIds(process.env.GENRE, process.env.STYLE);
   let dataArr = [];
+  ///LOOP START VALUE
+  let startIndex = process.env.START_INDEX ? Number(process.env.START_INDEX) : 0;
   //BEGIN ITERATION
-  for (let i = 0; i < releaseIds.length; i++) {
+  for (let i = startIndex; i < releaseIds.length; i++) {
     const reviewsUrl = `https://www.discogs.com/release/${releaseIds[i]}/reviews`;
     console.log(`${process.env.STYLE} - URL ${i + 1} of ${releaseIds.length + 1}: ${reviewsUrl}`);
     try {
