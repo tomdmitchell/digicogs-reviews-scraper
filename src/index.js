@@ -10,11 +10,12 @@ import getPuppeteerPage from './getPuppeteerPage.js';
 import getNumberOfReviews from './getNumberOfReviews.js';
 import getReleaseIds from './getReleaseIds.js';
 import counterWrapper from './counterWrapper.js';
+import mergeJsons from './mergeJsons.js';
+import getTimeStamp from './getTimestamp.js';
 
 const init = async () => {
   //INIT COUNTER
   let counter = counterWrapper();
-  let fileIndex = 1;
   //INIT LOG
   let logObject = { failure: [], releasesWithReviews: 0 };
   //LAUNCH BROWSER
@@ -27,14 +28,14 @@ const init = async () => {
   //BEGIN ITERATION
   for (let i = startIndex; i < releaseIds.length; i++) {
     const reviewsUrl = `https://www.discogs.com/release/${releaseIds[i]}/reviews`;
-    console.log(`${process.env.STYLE} - URL ${i + 1} of ${releaseIds.length + 1}: ${reviewsUrl}`);
+    console.log(`${process.env.STYLE} - URL ${i} of ${releaseIds.length}: ${reviewsUrl}`);
     try {
       await page.goto(reviewsUrl, { waitUntil: 'networkidle2' });
       //CHECK FOR PAGINATION ELEMENT
       try {
         await page.waitForSelector('.pagination_total', { timeout: 4000 });
       } catch (err) {
-        console.log('***Pagination element not found');
+        console.log('***Error finding pagination element');
         logObject.failure.push({ [releaseIds[i]]: err.toString() });
         continue;
       }
@@ -57,16 +58,24 @@ const init = async () => {
     let counterValue = counter();
     if (counterValue === 1000) {
       counter = counterWrapper();
-      writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
-      fileIndex++;
+      await writeJson(
+        { reviewsData: dataArr },
+        `${process.env.STYLE}_${getTimeStamp()}`,
+        `json_output`
+      );
       dataArr = [];
     }
     await page.waitForTimeout(4000).then(() => console.log('Delay 4000...'));
   }
 
   //WRITE REMAINING REVIEW DATA & ERR LOG
-  writeJson({ reviewsData: dataArr }, `${process.env.STYLE}_${fileIndex}`, `json_output`);
-  writeJson(logObject, 'log', 'log_output');
+  await writeJson(
+    { reviewsData: dataArr },
+    `${process.env.STYLE}_${getTimeStamp()}`,
+    `json_output`
+  );
+  await mergeJsons(`json_output`, `reviewsData`, `${process.env.STYLE}_master`);
+  await writeJson(logObject, 'log', 'log_output');
   process.exit(1);
 };
 
