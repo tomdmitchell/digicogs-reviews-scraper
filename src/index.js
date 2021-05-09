@@ -29,7 +29,7 @@ const init = async () => {
   //BEGIN ITERATION
   for (let i = startIndex; i < endIndex; i++) {
     const reviewsUrl = `https://www.discogs.com/release/${releaseIds[i]}/reviews`;
-    console.log(`${process.env.STYLE} - URL ${i} of ${releaseIds.length - 1}: ${reviewsUrl}`);
+    console.log(`${process.env.STYLE} - URL ${i} of ${endIndex - 1}: ${reviewsUrl}`);
     try {
       await page.goto(reviewsUrl, { waitUntil: 'networkidle2' });
       //CHECK FOR PAGINATION ELEMENT
