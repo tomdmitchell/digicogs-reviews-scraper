@@ -1,5 +1,6 @@
-const createDataObj = (numberOfReviews, releaseId) => {
+const createDataObj = (numberOfReviews, releaseId, yearOfRelease) => {
   let dataObj = {};
+  dataObj.year = Number(yearOfRelease);
   dataObj.numberOfReviews = numberOfReviews;
   dataObj.releaseId = releaseId;
   dataObj.style = sanitiseStyle(process.env.STYLE);

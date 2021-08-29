@@ -21,52 +21,73 @@ const init = async () => {
   //LAUNCH BROWSER
   const browser = await puppeteer.launch();
   let page = await getPuppeteerPage(browser);
-  const releaseIds = await getReleaseIds(process.env.GENRE, process.env.STYLE);
+  const releaseIds = await getReleaseIds(process.env.STYLE);
   let dataArr = [];
-  ///SET INDEXES
+  //COUNT TOTAL RELEASES
+  const yearsInObj = Object.keys(releaseIds.data);
+  console.log(yearsInObj);
+  ///SET YEAR START/END INDEXES
   let startIndex = process.env.START_INDEX ? Number(process.env.START_INDEX) : 0;
-  let endIndex = process.env.END_INDEX ? Number(process.env.END_INDEX) : releaseIds.length;
+  let endIndex = process.env.END_INDEX ? Number(process.env.END_INDEX) : yearsInObj.length;
+  //
+  let totalReleases = 0;
+  let countObj = {};
+  for (let k = 0; k < yearsInObj.length; k++) {
+    const lengthOfYearsArr = releaseIds.data[yearsInObj[k]].length;
+    countObj[yearsInObj[k]] = lengthOfYearsArr;
+    totalReleases = totalReleases + lengthOfYearsArr;
+  }
   //BEGIN ITERATION
-  for (let i = startIndex; i < endIndex; i++) {
-    const reviewsUrl = `https://www.discogs.com/release/${releaseIds[i]}/reviews`;
-    console.log(`${process.env.STYLE} - URL ${i} of ${endIndex - 1}: ${reviewsUrl}`);
-    try {
-      await page.goto(reviewsUrl, { waitUntil: 'networkidle2' });
-      //CHECK FOR PAGINATION ELEMENT
-      try {
-        await page.waitForSelector('.pagination_total', { timeout: 4000 });
-      } catch (err) {
-        console.log('***Error finding pagination element');
-        logObject.failure.push({ [releaseIds[i]]: err.toString() });
-        continue;
-      }
-      //GET NUMBER OF REVIEWS
-      let numberOfReviews = await getNumberOfReviews(page);
-      if (numberOfReviews > 0) {
-        console.log(`Number of reviews for release: ${releaseIds[i]}: ${numberOfReviews}`);
-        logObject.releasesWithReviews++;
-        const dataObj = createDataObj(numberOfReviews, releaseIds[i]);
-        dataArr.push(dataObj);
-      } else {
-        console.log(`No reviews for release ${releaseIds[i]}`);
-      }
-    } catch (err) {
-      console.log('***Error in main catch block: ', err);
-      logObject.failure.push({ [releaseIds[i]]: err.toString() });
-      page = await getPuppeteerPage(browser);
-    }
-    //HANDLE COUNTER
-    let counterValue = counter();
-    if (counterValue === 1000) {
-      counter = counterWrapper();
-      await writeJson(
-        { reviewsData: dataArr },
-        `${process.env.STYLE}_${getTimeStamp()}`,
-        `json_output`
+  for (let j = startIndex; j < endIndex; j++) {
+    for (let i = 0; i < releaseIds.data[yearsInObj[j]].length; i++) {
+      const runningTotal = countCurrentYearsIndex(yearsInObj[j], countObj) + i;
+      const yearOfRelease = yearsInObj[j];
+      const releaseId = releaseIds.data[yearsInObj[j]][i];
+      const reviewsUrl = `https://www.discogs.com/release/${releaseId}/reviews`;
+      console.log(
+        `${process.env.STYLE} - URL ${runningTotal} of ${totalReleases}. ${i} of ${
+          releaseIds.data[yearsInObj[j]].length - 1
+        } in year ${yearOfRelease} (index: ${j}): ${reviewsUrl}`
       );
-      dataArr = [];
+      try {
+        await page.goto(reviewsUrl, { waitUntil: 'networkidle2' });
+        //CHECK FOR PAGINATION ELEMENT
+        try {
+          await page.waitForSelector('.pagination_total', { timeout: 4000 });
+        } catch (err) {
+          console.log('***Error finding pagination element');
+          logObject.failure.push({ releaseId: err.toString() });
+          continue;
+        }
+        //GET NUMBER OF REVIEWS
+        let numberOfReviews = await getNumberOfReviews(page);
+        if (numberOfReviews > 0) {
+          console.log(`Number of reviews for release: ${releaseId}: ${numberOfReviews}`);
+          logObject.releasesWithReviews++;
+          const dataObj = createDataObj(numberOfReviews, releaseId, yearOfRelease);
+          dataArr.push(dataObj);
+        } else {
+          console.log(`No reviews for release ${releaseId}`);
+        }
+      } catch (err) {
+        console.log('***Error in main catch block: ', err);
+        logObject.failure.push({ releaseId: err.toString() });
+        page = await getPuppeteerPage(browser);
+      }
+      //HANDLE COUNTER
+      let counterValue = counter();
+      if (counterValue === 1000) {
+        counter = counterWrapper();
+        await writeJson(
+          { reviewsData: dataArr },
+          `${process.env.STYLE}_${getTimeStamp()}`,
+          `json_output`
+        );
+        dataArr = [];
+      }
+      await page.waitForTimeout(4000).then(() => console.log('Delay 4000...'));
     }
-    await page.waitForTimeout(4000).then(() => console.log('Delay 4000...'));
+    //
   }
 
   //WRITE REMAINING REVIEW DATA & ERR LOG
@@ -78,6 +99,16 @@ const init = async () => {
   await mergeJsons(`json_output`, `reviewsData`, `${process.env.STYLE}_master`);
   await writeJson(logObject, 'log', 'log_output');
   process.exit(1);
+};
+
+const countCurrentYearsIndex = (year, countObj) => {
+  const countObjYears = Object.keys(countObj);
+  let runningTotal = 0;
+  for (let i = 0; i < countObjYears.length; i++) {
+    if (year === countObjYears[i]) break;
+    runningTotal = runningTotal + countObj[countObjYears[i]];
+  }
+  return runningTotal;
 };
 
 init();
