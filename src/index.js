@@ -9,20 +9,19 @@ import createDataObj from './createDataObj.js';
 import getPuppeteerPage from './getPuppeteerPage.js';
 import getNumberOfReviews from './getNumberOfReviews.js';
 import getReleaseIds from './getReleaseIds.js';
-import counterWrapper from './counterWrapper.js';
+// import counterWrapper from './counterWrapper.js';
 import mergeJsons from './mergeJsons.js';
 import getTimeStamp from './getTimestamp.js';
 
 const init = async () => {
   //INIT COUNTER
-  let counter = counterWrapper();
+  // let counter = counterWrapper();
   //INIT LOG
   let logObject = { failure: [], releasesWithReviews: 0 };
   //LAUNCH BROWSER
   const browser = await puppeteer.launch();
   let page = await getPuppeteerPage(browser);
   const releaseIds = await getReleaseIds(process.env.STYLE);
-  let dataArr = [];
   //COUNT TOTAL RELEASES
   const yearsInObj = Object.keys(releaseIds.data);
   console.log(yearsInObj);
@@ -39,6 +38,7 @@ const init = async () => {
   }
   //BEGIN ITERATION
   for (let j = startIndex; j < endIndex; j++) {
+    let dataArr = [];
     for (let i = 0; i < releaseIds.data[yearsInObj[j]].length; i++) {
       const runningTotal = countCurrentYearsIndex(yearsInObj[j], countObj) + i;
       const yearOfRelease = yearsInObj[j];
@@ -75,29 +75,37 @@ const init = async () => {
         page = await getPuppeteerPage(browser);
       }
       //HANDLE COUNTER
-      let counterValue = counter();
-      if (counterValue === 1000) {
-        counter = counterWrapper();
-        await writeJson(
-          { reviewsData: dataArr },
-          `${process.env.STYLE}_${getTimeStamp()}`,
-          `json_output`
-        );
-        dataArr = [];
-      }
+      // let counterValue = counter();
+      // if (counterValue === 1000) {
+      //   counter = counterWrapper();
+      //   await writeJson(
+      //     { reviewsData: dataArr },
+      //     `${process.env.STYLE}_${getTimeStamp()}`,
+      //     `json_output`
+      //   );
+      //   dataArr = [];
+      // }
       await page.waitForTimeout(4000).then(() => console.log('Delay 4000...'));
     }
-    //
+    if (dataArr.length > 0) {
+      await writeJson(
+        { reviewsData: dataArr },
+        `${process.env.STYLE}_${getTimeStamp()}_${yearsInObj[j]}`,
+        `json_output`
+      );
+    } else {
+      console.log('dataArr length is 0 - no JSON written')
+    }
   }
 
   //WRITE REMAINING REVIEW DATA & ERR LOG
-  await writeJson(
-    { reviewsData: dataArr },
-    `${process.env.STYLE}_${getTimeStamp()}`,
-    `json_output`
-  );
+  // await writeJson(
+  //   { reviewsData: dataArr },
+  //   `${process.env.STYLE}_${getTimeStamp()}`,
+  //   `json_output`
+  // );
   await mergeJsons(`json_output`, `reviewsData`, `${process.env.STYLE}_master`);
-  await writeJson(logObject, 'log', 'log_output');
+  // await writeJson(logObject, 'log', 'log_output');
   process.exit(1);
 };
 
